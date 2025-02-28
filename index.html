@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Dyte Recording Stage</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <script>
+      // Function to add timing info to the UI
+      function logTiming(message) {
+        const timestamp = new Date().toISOString();
+        const timingInfo = document.getElementById("timing-info");
+        timingInfo.innerHTML += `<div>${timestamp}: ${message}</div>`;
+      }
+
+      // Track script loading status
+      const scriptStatus = {
+        uiKit: false,
+        dyteCore: false,
+      };
+
+      // Create a performance observer for script loading
+      const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          if (entry.initiatorType === "script") {
+            logTiming(
+              `Script loaded: ${entry.name} - Duration: ${entry.duration.toFixed(2)}ms`
+            );
+          }
+        });
+      });
+      observer.observe({ entryTypes: ["resource"] });
+    </script>
+    <script type="module">
+      import { defineCustomElements } from "https://cdn.jsdelivr.net/npm/@dytesdk/ui-kit@2.2.2/loader/index.es2017.js";
+      defineCustomElements()
+        .then(() => {
+          scriptStatus.uiKit = true;
+          logTiming(`UI Kit downloaded and initialized`);
+        })
+        .catch((error) => {
+          logTiming(`Error loading UI Kit: ${error.message}`);
+        });
+    </script>
+    <script
+      async
+      onload="scriptStatus.dyteCore = true; logTiming('Dyte Core downloaded')"
+      onerror="logTiming('Error loading Dyte Core')"
+      src="https://cdn.dyte.in/core/dyte-2.4.3.js"
+    ></script>
+    <script
+      async
+      onload="scriptStatus.dyteRecording = true; logTiming('Dyte Recording SDK downloaded')"
+      onerror="logTiming('Error loading Dyte Recording SDK')"
+      src="https://cdn.dyte.in/recording/recording-sdk.js"
+    ></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        background: #1b2021;
+        color: #e3dcc2;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100dvh;
+        width: 100dvw;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      #stage {
+        flex: auto;
+        background: #51513d;
+        border: 1px solid red;
+        height: 200px;
+        width: 100dvw;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 style="font-size: 1.2rem">Recording</h1>
+    <div id="timing-info"></div>
+    <div id="stage"></div>
+    <script>
+      // Log page load
+      logTiming("Page loaded");
+
+      // The dyteAuthToken is a queryParameter:
+      const urlParams = new URLSearchParams(window.location.search);
+      let authToken = urlParams.get("authToken");
+      console.log("Token From URL ", authToken);
+      logTiming(`Got authToken=...${authToken?.slice(-10)}`);
+
+      // Make the fetch request (simulated)
+      async function fetchStageData() {
+        try {
+          const startTime = performance.now();
+          logTiming("API request started (dummy request)");
+          const response = await fetch(
+            `https://ws-public.interpol.int/notices/v1/red?page=1&resultPerPage=200`
+          );
+          const duration = (performance.now() - startTime).toFixed(2);
+          logTiming(`API request finished - Duration: ${duration}ms`);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // We don't do anything with the response in this example
+          // But in a real application we would use this to determine layout and stage configuration
+        } catch (error) {
+          logTiming(`Error: ${error.message}`);
+          throw error;
+        }
+      }
+
+      async function startDyte() {
+        try {
+          // Wait for scripts to load
+          const waitForScripts = async () => {
+            const checkScripts = () =>
+              scriptStatus.uiKit &&
+              scriptStatus.dyteCore &&
+              scriptStatus.dyteRecording;
+            if (!checkScripts()) {
+              logTiming("Waiting for Dyte scripts to load...");
+              await new Promise((resolve) => {
+                const interval = setInterval(() => {
+                  if (checkScripts()) {
+                    clearInterval(interval);
+                    resolve();
+                  }
+                }, 100);
+              });
+              logTiming("All Dyte scripts loaded");
+            }
+          };
+
+          await waitForScripts();
+
+          const startTime = performance.now();
+          logTiming("Initialize the Recording SDK");
+          const recordingSdk = new RecordingSDK.DyteRecording({});
+          const meeting = await DyteClient.init({
+            authToken,
+            defaults: { audio: false, video: false },
+          });
+          await recordingSdk.init(meeting);
+          const duration = (performance.now() - startTime).toFixed(2);
+          logTiming(`Recording SDK Started - Duration: ${duration}ms`);
+
+          // And now display!
+          const audio = document.createElement("dyte-participants-audio");
+          audio.id = "dyte-audio";
+          audio.meeting = meeting;
+          document.getElementById("stage").appendChild(audio);
+
+          const grid = document.createElement("dyte-grid");
+          grid.id = "dyte-grid";
+          grid.meeting = meeting;
+          document.getElementById("stage").appendChild(grid);
+          logTiming("Dyte Stage Rendered");
+        } catch (error) {
+          logTiming(`Error: ${error.message}`);
+          throw error;
+        }
+      }
+
+      // Execute the fetch
+      fetchStageData().then(startDyte).catch(console.error);
+    </script>
+  </body>
+</html>

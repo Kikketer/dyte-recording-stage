@@ -23,4 +23,4 @@ initMeeting({
 });
 ```
 
-WHen you click the record button it'll request that url instead and hand it the proper Dyte auth url via search params.  Basically it "just works". Your recording should look similar to the image above.
+When you click the record button it'll request that url instead and hand it the proper Dyte auth url via search params.  Basically it "just works". Your recording should look similar to the image above.

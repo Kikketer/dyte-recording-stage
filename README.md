@@ -1,6 +1,6 @@
 # Dyte Recording Stage
 
-This is a bare minimum debugging page for Dyte recording stage to identify potential slowdowns in recording startup time.
+This is a bare minimum debugging page for Dyte recording stage to identify potential slowdowns in recording startup time. Note that the page makes an API request to a public endpoint just to simulate querying your own system for data. The timings of this API call are very similar to other "real" servers I've been using to send stage layout data to this page. The goal here is to find the longest blocking activity.
 
 ![Startup Example](./Startup2.png)
 

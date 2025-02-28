@@ -1,2 +1,3 @@
-# dyte-recording-stage
-Bare minimum recording stage using vanilla HTML
+# Dyte Recording Stage
+
+This is a bare minimum debugging page for Dyte recording stage to identify potential slowdowns in recording startup time.
